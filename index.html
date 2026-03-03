@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío de Signos: Sumas y Restas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        .pop {
+            animation: pop 0.3s ease-out both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .fade-out-up {
+            animation: fadeOutUp 1s ease-in forwards;
+        }
+        @keyframes fadeOutUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div id="app" class="w-full max-w-lg glass-panel rounded-3xl shadow-2xl overflow-hidden relative">
+        
+        <!-- PANTALLA: MENÚ PRINCIPAL -->
+        <div id="screen-menu" class="p-8 flex flex-col items-center justify-center min-h-[500px]">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">Desafío de Signos</h1>
+                <p class="text-slate-300">¡Domina las sumas y restas!</p>
+            </div>
+
+            <div class="w-full space-y-4">
+                <button onclick="startGame('collab')" class="btn w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg border border-blue-400 flex flex-col items-center">
+                    <span class="text-xl">🤝 Fase 1: Colaborativa</span>
+                    <span class="text-sm font-normal text-blue-200 mt-1">Sin paréntesis. ¡Trabajo en equipo!</span>
+                </button>
+                
+                <button onclick="startGame('indiv')" class="btn w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg border border-purple-400 flex flex-col items-center">
+                    <span class="text-xl">👤 Fase 2: Individual</span>
+                    <span class="text-sm font-normal text-purple-200 mt-1">Con paréntesis y leyes de signos.</span>
+                </button>
+
+                <button onclick="showLeaderboard()" class="btn w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg mt-4 flex justify-center items-center gap-2">
+                    🏆 Ver Clasificación
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA: JUEGO -->
+        <div id="screen-game" class="hidden flex flex-col h-full min-h-[600px]">
+            <!-- Header -->
+            <div class="bg-slate-800/50 p-4 border-b border-slate-700 flex justify-between items-center">
+                <div class="flex flex-col">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-bold" id="ui-mode">Colaborativo</span>
+                    <span class="text-lg font-bold text-emerald-400">Nivel <span id="ui-level">1</span></span>
+                </div>
+                <div class="flex gap-4 text-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-slate-400 uppercase">Tiempo</span>
+                        <span class="text-xl font-black text-rose-400" id="ui-time">60</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-slate-400 uppercase">Puntos</span>
+                        <span class="text-xl font-black text-amber-400" id="ui-score">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área de Ecuación -->
+            <div class="flex-1 flex flex-col items-center justify-center p-6 relative">
+                <div id="feedback-layer" class="absolute top-4 left-0 w-full flex justify-center pointer-events-none z-10"></div>
+                
+                <!-- Barra de progreso de nivel -->
+                <div class="w-full max-w-xs bg-slate-800 rounded-full h-2 mb-8">
+                    <div id="level-progress" class="bg-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div id="equation-display" class="text-4xl md:text-5xl font-black tracking-widest text-center break-words mb-8 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                    +2 - 8 =
+                </div>
+
+                <!-- Campo de Respuesta Visual -->
+                <div class="relative w-full max-w-[200px]">
+                    <div id="answer-display" class="w-full bg-slate-900 border-2 border-slate-600 rounded-xl py-3 px-4 text-3xl font-bold text-center h-16 flex items-center justify-center min-w-[100px] text-white">
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teclado en Pantalla -->
+            <div class="bg-slate-800/80 p-4 rounded-t-3xl border-t border-slate-700">
+                <div class="grid grid-cols-3 gap-3 mb-3">
+                    <button onclick="typeNum('1')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">1</button>
+                    <button onclick="typeNum('2')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">2</button>
+                    <button onclick="typeNum('3')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">3</button>
+                    <button onclick="typeNum('4')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">4</button>
+                    <button onclick="typeNum('5')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">5</button>
+                    <button onclick="typeNum('6')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">6</button>
+                    <button onclick="typeNum('7')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">7</button>
+                    <button onclick="typeNum('8')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">8</button>
+                    <button onclick="typeNum('9')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">9</button>
+                    <button onclick="toggleSign()" class="btn bg-blue-600/50 hover:bg-blue-500/50 rounded-xl py-4 text-2xl font-bold">+/-</button>
+                    <button onclick="typeNum('0')" class="btn bg-slate-700 hover:bg-slate-600 rounded-xl py-4 text-2xl font-bold">0</button>
+                    <button onclick="deleteNum()" class="btn bg-rose-600/50 hover:bg-rose-500/50 rounded-xl py-4 text-2xl font-bold">⌫</button>
+                </div>
+                <button onclick="submitAnswer()" class="btn w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black text-xl py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                    COMPROBAR
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA: FIN DEL JUEGO / GUARDAR PUNTAJE -->
+        <div id="screen-gameover" class="hidden p-8 flex flex-col items-center justify-center min-h-[500px]">
+            <h2 class="text-3xl font-black text-white mb-2">¡Tiempo Terminado!</h2>
+            <div class="bg-slate-800 rounded-2xl p-6 w-full text-center my-6 border border-slate-700 shadow-xl">
+                <p class="text-slate-400 text-sm uppercase mb-1">Puntuación Final</p>
+                <p class="text-6xl font-black text-amber-400 mb-2" id="final-score">0</p>
+                <p class="text-emerald-400 font-bold">Nivel Alcanzado: <span id="final-level">1</span></p>
+            </div>
+            
+            <div class="w-full mb-6">
+                <label class="block text-sm font-bold mb-2 text-slate-300">Ingresa tu nombre para la clasificación:</label>
+                <input type="text" id="player-name" maxlength="15" placeholder="Tu Nombre" class="w-full bg-slate-900 border-2 border-slate-600 rounded-xl py-3 px-4 text-xl font-bold text-center text-white focus:outline-none focus:border-blue-500">
+            </div>
+
+            <button onclick="saveScore()" class="btn w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl mb-4">
+                Guardar Puntaje
+            </button>
+            <button onclick="showMenu()" class="btn w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">
+                Volver al Menú
+            </button>
+        </div>
+
+        <!-- PANTALLA: CLASIFICACIÓN (LEADERBOARD) -->
+        <div id="screen-leaderboard" class="hidden p-8 flex flex-col min-h-[500px]">
+            <h2 class="text-3xl font-black text-center text-amber-400 mb-6 flex items-center justify-center gap-2">
+                🏆 Mejores Puntajes
+            </h2>
+            
+            <div class="flex-1 bg-slate-800/50 rounded-2xl border border-slate-700 p-2 overflow-y-auto max-h-[350px] mb-6">
+                <ul id="leaderboard-list" class="space-y-2">
+                    <!-- Los puntajes se generan por JS -->
+                </ul>
+            </div>
+
+            <button onclick="showMenu()" class="btn w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl mt-auto">
+                Volver al Menú Principal
+            </button>
+        </div>
+
+    </div>
+
+    <!-- LÓGICA DEL JUEGO -->
+    <script>
+        // --- VARIABLES DE ESTADO ---
+        let currentMode = ''; // 'collab' o 'indiv'
+        let score = 0;
+        let level = 1;
+        let correctInLevel = 0;
+        const requiredToLevelUp = 3; // Respuestas correctas para subir de nivel
+        let currentAnswer = null;
+        let timeLeft = 60; // 60 segundos por ronda
+        let timerInterval = null;
+        let userInput = ""; // Maneja lo que el usuario escribe
+
+        // --- REFERENCIAS AL DOM ---
+        const screens = {
+            menu: document.getElementById('screen-menu'),
+            game: document.getElementById('screen-game'),
+            gameover: document.getElementById('screen-gameover'),
+            leaderboard: document.getElementById('screen-leaderboard')
+        };
+        const els = {
+            equation: document.getElementById('equation-display'),
+            answerDisp: document.getElementById('answer-display'),
+            score: document.getElementById('ui-score'),
+            level: document.getElementById('ui-level'),
+            time: document.getElementById('ui-time'),
+            mode: document.getElementById('ui-mode'),
+            progress: document.getElementById('level-progress'),
+            feedback: document.getElementById('feedback-layer'),
+            finalScore: document.getElementById('final-score'),
+            finalLevel: document.getElementById('final-level'),
+            playerName: document.getElementById('player-name'),
+            leaderboardList: document.getElementById('leaderboard-list')
+        };
+
+        // --- FUNCIONES DE UTILIDAD ---
+        function hideAllScreens() {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        }
+
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function updateDisplay() {
+            els.answerDisp.textContent = userInput === "" ? "" : userInput;
+            els.score.textContent = score;
+            els.level.textContent = level;
+            els.time.textContent = timeLeft;
+            els.progress.style.width = `${(correctInLevel / requiredToLevelUp) * 100}%`;
+        }
+
+        function showFeedback(text, isCorrect) {
+            const fb = document.createElement('div');
+            fb.textContent = text;
+            fb.className = `text-2xl font-black px-4 py-2 rounded-xl shadow-lg fade-out-up absolute ${isCorrect ? 'text-emerald-400 bg-emerald-900/80 border border-emerald-500' : 'text-rose-400 bg-rose-900/80 border border-rose-500'}`;
+            els.feedback.appendChild(fb);
+            setTimeout(() => {
+                if (els.feedback.contains(fb)) els.feedback.removeChild(fb);
+            }, 1000);
+        }
+
+        // --- NAVEGACIÓN ---
+        function showMenu() {
+            hideAllScreens();
+            screens.menu.classList.remove('hidden');
+            clearInterval(timerInterval);
+        }
+
+        function showLeaderboard() {
+            hideAllScreens();
+            renderLeaderboard();
+            screens.leaderboard.classList.remove('hidden');
+        }
+
+        // --- GENERADORES DE MATEMÁTICAS ---
+        // Retorna la configuración de dificultad según el nivel
+        function getDifficulty() {
+            // Nivel 1: 2 operandos, val max 9
+            // Aumenta progresivamente operandos (hasta 5) y valores máximos
+            let operands = 2 + Math.floor((level - 1) / 2);
+            if (operands > 5) operands = 5; 
+            let maxVal = 9 + (Math.floor(level / 2) * 5); 
+            return { operands, maxVal };
+        }
+
+        function generateCollabExpression() {
+            const { operands, maxVal } = getDifficulty();
+            let exprStr = "";
+            let result = 0;
+
+            for (let i = 0; i < operands; i++) {
+                let val = randInt(1, maxVal);
+                let sign = Math.random() > 0.5 ? 1 : -1;
+                
+                // Asegurar que el primer número en nivel 1 sea como el ejemplo "+2 - 8"
+                if (level === 1 && i === 0) sign = 1; 
+
+                if (i === 0) {
+                    exprStr += (sign === 1 ? "+" : "-") + val;
+                } else {
+                    exprStr += " " + (sign === 1 ? "+" : "-") + " " + val;
+                }
+                result += (sign * val);
+            }
+            return { text: exprStr + " =", answer: result };
+        }
+
+        function generateIndivExpression() {
+            const { operands, maxVal } = getDifficulty();
+            let exprStr = "";
+            let result = 0;
+
+            for (let i = 0; i < operands; i++) {
+                let val = randInt(1, maxVal);
+                let innerSign = Math.random() > 0.5 ? 1 : -1;
+                let outerSign = Math.random() > 0.5 ? 1 : -1;
+
+                // Para el primer término, a veces simplificamos para no tener dobles signos al inicio siempre
+                let outerStr = outerSign === 1 ? "+" : "-";
+                let innerStr = innerSign === 1 ? "+" : "-";
+
+                if (i === 0) {
+                    exprStr += `${outerStr}(${innerStr}${val})`;
+                } else {
+                    exprStr += ` ${outerStr} (${innerStr}${val})`;
+                }
+                result += (outerSign * innerSign * val);
+            }
+            return { text: exprStr + " =", answer: result };
+        }
+
+        // --- FLUJO DE JUEGO ---
+        function startGame(mode) {
+            currentMode = mode;
+            score = 0;
+            level = 1;
+            correctInLevel = 0;
+            timeLeft = 60; // Ajusta el tiempo total aquí
+            userInput = "";
+            
+            els.mode.textContent = mode === 'collab' ? 'Fase Colaborativa' : 'Fase Individual';
+            els.equation.classList.remove('text-purple-400', 'text-blue-400');
+            els.equation.classList.add(mode === 'collab' ? 'text-blue-400' : 'text-purple-400');
+
+            hideAllScreens();
+            screens.game.classList.remove('hidden');
+            
+            nextQuestion();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function nextQuestion() {
+            userInput = "";
+            let data;
+            if (currentMode === 'collab') {
+                data = generateCollabExpression();
+            } else {
+                data = generateIndivExpression();
+            }
+            
+            els.equation.textContent = data.text;
+            currentAnswer = data.answer;
+            
+            // Animación de entrada
+            els.equation.classList.remove('pop');
+            void els.equation.offsetWidth; // Trigger reflow
+            els.equation.classList.add('pop');
+            
+            updateDisplay();
+        }
+
+        // --- INTERACCIÓN CON EL TECLADO ---
+        function typeNum(num) {
+            if (userInput.length < 5) { // Límite de caracteres
+                if (userInput === "0" && num !== "0") {
+                    userInput = num;
+                } else {
+                    userInput += num;
+                }
+                updateDisplay();
+            }
+        }
+
+        function toggleSign() {
+            if (userInput.startsWith('-')) {
+                userInput = userInput.substring(1);
+            } else {
+                userInput = '-' + userInput;
+            }
+            updateDisplay();
+        }
+
+        function deleteNum() {
+            if (userInput.length > 0) {
+                userInput = userInput.slice(0, -1);
+                updateDisplay();
+            }
+        }
+
+        // Soporte para teclado físico
+        document.addEventListener('keydown', (e) => {
+            if (screens.game.classList.contains('hidden')) return;
+            if (e.key >= '0' && e.key <= '9') typeNum(e.key);
+            if (e.key === 'Backspace') deleteNum();
+            if (e.key === '-' || e.key === '+') toggleSign();
+            if (e.key === 'Enter') submitAnswer();
+        });
+
+        // --- VALIDACIÓN DE RESPUESTA ---
+        function submitAnswer() {
+            if (userInput === "" || userInput === "-") return;
+
+            const numInput = parseInt(userInput, 10);
+            
+            if (numInput === currentAnswer) {
+                // RESPUESTA CORRECTA
+                let pointsGained = level * 10;
+                score += pointsGained;
+                correctInLevel++;
+                showFeedback(`+${pointsGained}`, true);
+                
+                if (correctInLevel >= requiredToLevelUp) {
+                    level++;
+                    correctInLevel = 0;
+                    timeLeft += 10; // Bonus de tiempo al subir de nivel
+                    showFeedback(`¡Nivel ${level}! +10s`, true);
+                }
+                
+                nextQuestion();
+            } else {
+                // RESPUESTA INCORRECTA
+                let pointsLost = level * 5;
+                score -= pointsLost;
+                if (score < 0) score = 0; // No permitir puntaje negativo
+                
+                showFeedback(`-${pointsLost}`, false);
+                
+                // Efecto visual de error
+                els.answerDisp.classList.remove('shake');
+                void els.answerDisp.offsetWidth;
+                els.answerDisp.classList.add('shake');
+                els.answerDisp.classList.add('border-rose-500');
+                
+                setTimeout(() => {
+                    els.answerDisp.classList.remove('border-rose-500');
+                }, 400);
+                
+                userInput = ""; // Limpiar para que intente de nuevo
+                updateDisplay();
+            }
+        }
+
+        // --- FIN DEL JUEGO Y LEADERBOARD ---
+        function endGame() {
+            clearInterval(timerInterval);
+            hideAllScreens();
+            
+            els.finalScore.textContent = score;
+            els.finalLevel.textContent = level;
+            els.playerName.value = ''; // Limpiar input
+            
+            screens.gameover.classList.remove('hidden');
+        }
+
+        function saveScore() {
+            const name = els.playerName.value.trim() || 'Jugador Anónimo';
+            const newScore = {
+                name: name,
+                score: score,
+                mode: currentMode === 'collab' ? 'Colaborativo' : 'Individual',
+                date: new Date().toLocaleDateString()
+            };
+
+            // Recuperar puntajes previos de LocalStorage
+            let scores = JSON.parse(localStorage.getItem('mathGameScores')) || [];
+            scores.push(newScore);
+            
+            // Ordenar de mayor a menor y guardar los mejores 50
+            scores.sort((a, b) => b.score - a.score);
+            scores = scores.slice(0, 50);
+            
+            localStorage.setItem('mathGameScores', JSON.stringify(scores));
+            
+            showLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const scores = JSON.parse(localStorage.getItem('mathGameScores')) || [];
+            els.leaderboardList.innerHTML = '';
+            
+            if (scores.length === 0) {
+                els.leaderboardList.innerHTML = '<li class="text-center text-slate-400 p-4">Aún no hay puntajes registrados. ¡Sé el primero!</li>';
+                return;
+            }
+
+            scores.forEach((s, index) => {
+                const li = document.createElement('li');
+                let medal = '';
+                if (index === 0) medal = '🥇';
+                else if (index === 1) medal = '🥈';
+                else if (index === 2) medal = '🥉';
+                else medal = `<span class="w-6 inline-block text-center text-slate-500">${index + 1}</span>`;
+
+                li.className = `flex justify-between items-center p-3 rounded-xl ${index < 3 ? 'bg-slate-700/80 border border-slate-600' : 'bg-slate-800/40'}`;
+                li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="text-xl">${medal}</div>
+                        <div>
+                            <div class="font-bold text-white">${s.name}</div>
+                            <div class="text-xs text-slate-400">${s.mode}</div>
+                        </div>
+                    </div>
+                    <div class="font-black text-amber-400 text-xl">${s.score} pts</div>
+                `;
+                els.leaderboardList.appendChild(li);
+            });
+        }
+
+    </script>
+</body>
+</html>
